@@ -1,10 +1,435 @@
-// Replace your current Delete key handler with this:
-window.addEventListener('keydown', (e) => {
-  if (!selectedId) return;
-  const tag = (document.activeElement?.tagName || '').toUpperCase();
-  if (tag === 'INPUT' || tag === 'TEXTAREA' || document.activeElement?.isContentEditable) return;
-  if (e.key === 'Delete' || e.key === 'Backspace') {
-    e.preventDefault();
-    document.getElementById('pDelete').click();
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>SheetForge – Visual Builder</title>
+<style>
+  :root{--bg:#ffffff;--ink:#0f172a;--muted:#64748b;--border:#e2e8f0;--ok:#10b981;--accent:#2563eb}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial;background:var(--bg);color:var(--ink)}
+  header{position:sticky;top:0;z-index:10;background:#fff;border-bottom:1px solid var(--border)}
+  .wrap{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 16px}
+  .btn{padding:8px 10px;border:1px solid var(--border);background:#fff;border-radius:10px;font-weight:600;cursor:pointer;transition:opacity .15s ease}
+  .btn[disabled]{opacity:.5;cursor:not-allowed}
+  .btn.primary{background:var(--ok);border-color:var(--ok);color:#fff}
+  .btn.accent{background:var(--accent);border-color:var(--accent);color:#fff}
+  main{display:grid;grid-template-columns:320px 1fr 360px;gap:12px;padding:12px;height:calc(100vh - 64px)}
+  .card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:12px}
+  .tab{padding:6px 10px;border:1px solid var(--border);border-radius:999px;cursor:pointer;margin-right:6px}
+  .tab.active{outline:2px solid var(--accent)}
+  .block{display:flex;align-items:center;gap:10px;border:1px solid var(--border);border-radius:12px;padding:10px;cursor:pointer;margin-top:8px}
+  .stage{position:relative;height:100%;border:1px solid var(--border);border-radius:12px;overflow:auto;background:#fff}
+  .gridwrap{position:relative;padding:16px}
+  .page{position:relative;margin:24px auto;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 18px rgba(0,0,0,0.06)}
+  .page-inner{position:absolute;inset:0}
+  .page-margins{position:absolute;inset:0;pointer-events:none;outline:1px dashed #d1d5db}
+  .widget{position:absolute;background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 18px rgba(0,0,0,0.06);padding:8px;user-select:none}
+  .widget.sel{outline:2px solid var(--accent)}
+  .ttl{font-weight:800;font-size:13px}.sub{font-size:12px;color:#64748b}
+  .box{margin-top:6px;border:1px dashed var(--border);border-radius:10px;height:calc(100% - 36px)}
+  .handle{position:absolute;width:12px;height:12px;background:#111;border-radius:3px;right:-6px;bottom:-6px;cursor:nwse-resize}
+  .inp{flex:1;border:1px solid var(--border);border-radius:10px;padding:10px}
+  .row{display:flex;gap:8px;align-items:center}
+  .hint{font-size:13px;color:#64748b}
+  .chip{display:inline-block;border:1px solid var(--border);border-radius:999px;padding:6px 10px;margin-right:6px;margin-top:6px;cursor:pointer;background:#fff}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div style="width:36px;height:36px;border-radius:10px;background:#111;color:#fff;display:grid;place-items:center;font-weight:800">SF</div>
+      <div>
+        <div style="font-weight:800">SheetForge Visual Builder</div>
+        <div class="hint">Canvas • Multi-sheet • AI Assistant</div>
+      </div>
+    </div>
+    <div class="row">
+      <input id="projectName" value="Untitled Workbook" style="border:1px solid var(--border);border-radius:8px;padding:6px 8px;">
+      <button id="compile" class="btn primary">Compile & Download</button>
+      <button id="deleteSel" class="btn" disabled>Delete Selected</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- LEFT: Sheets, Blocks, Page Setup -->
+  <aside class="card">
+    <div style="font-weight:800">Sheets</div>
+    <div id="tabs"></div>
+    <div class="row" style="margin-top:8px;">
+      <button id="newSheet" class="btn">+ New</button>
+      <button id="renameSheet" class="btn">Rename</button>
+      <button id="deleteSheet" class="btn">Delete</button>
+    </div>
+
+    <div style="font-weight:800;margin-top:14px;">Blocks</div>
+    <div class="hint">Click to add</div>
+    <div class="block" data-type="table">📋 Table</div>
+    <div class="block" data-type="chart">📊 Chart</div>
+    <div class="block" data-type="kpi">🎯 KPI</div>
+    <div class="block" data-type="button">🔘 Button</div>
+
+    <div style="font-weight:800;margin-top:14px;">Page Setup</div>
+    <div class="row">
+      <label class="hint" style="width:92px;">Size</label>
+      <select id="pageSize" class="inp" style="padding:6px 8px;">
+        <option value="Letter" selected>Letter (8.5×11)</option>
+        <option value="Legal">Legal (8.5×14)</option>
+        <option value="A4">A4 (210×297)</option>
+        <option value="A3">A3 (297×420)</option>
+      </select>
+    </div>
+    <div class="row" style="margin-top:6px;">
+      <label class="hint" style="width:92px;">Orientation</label>
+      <select id="orientation" class="inp" style="padding:6px 8px;">
+        <option value="portrait" selected>Portrait</option>
+        <option value="landscape">Landscape</option>
+      </select>
+    </div>
+    <div class="row" style="margin-top:6px;">
+      <label class="hint" style="width:92px;">Margins</label>
+      <input id="mTop" type="number" value="40" style="width:64px" class="inp">
+      <input id="mRight" type="number" value="40" style="width:64px" class="inp">
+      <input id="mBottom" type="number" value="40" style="width:64px" class="inp">
+      <input id="mLeft" type="number" value="40" style="width:64px" class="inp">
+    </div>
+
+    <div style="font-weight:800;margin-top:14px;">Workbook Settings</div>
+    <label class="row" style="margin-top:6px;">
+      <input type="checkbox" id="smartSave"> <span>Enable Smart Save-As (.xlsm)</span>
+    </label>
+    <div id="smartFields" style="display:none;">
+      <div class="hint">Base name</div>
+      <input id="baseName" value="Report_" class="inp">
+      <div class="hint" style="margin-top:6px;">Date format</div>
+      <input id="dateFmt" value="yyyy-mm-dd" class="inp">
+      <label class="row" style="margin-top:6px;">
+        <input type="checkbox" id="reqCopy" checked> <span>Require new copy on open</span>
+      </label>
+    </div>
+  </aside>
+
+  <!-- CENTER: Canvas -->
+  <section class="card" style="display:flex;flex-direction:column;">
+    <div class="row" style="margin-bottom:8px;">
+      <div class="hint">Drag to move • use corner to resize • Press Delete to remove selected</div>
+    </div>
+    <div class="stage">
+      <div id="canvasWrap" class="gridwrap">
+        <div id="page" class="page" style="width:816px;height:1056px;">
+          <div id="pageInner" class="page-inner"></div>
+          <div id="pageMargins" class="page-margins"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- RIGHT: AI Assistant + Properties -->
+  <aside class="card" id="rightPanel">
+    <div style="font-weight:800">AI Assistant</div>
+    <div class="hint">Describe what you want. Examples:</div>
+    <div class="chip" data-ai="total of Amount">total of Amount</div>
+    <div class="chip" data-ai="count rows where Status is Open">count rows where Status is Open</div>
+    <div class="chip" data-ai="show this as date">show this as date</div>
+    <div class="chip" data-ai="round to 2 decimals">round to 2 decimals</div>
+
+    <textarea id="aiText" class="inp" style="margin-top:8px;height:90px;" placeholder="e.g., total of Amount where Status is Paid"></textarea>
+    <div class="row">
+      <button id="aiSuggest" class="btn accent">Explain & Suggest</button>
+    </div>
+
+    <div id="aiResult" style="display:none;margin-top:10px;border:1px solid var(--border);border-radius:10px;padding:10px;">
+      <div style="font-weight:700;">Plain English</div>
+      <div id="aiExplain" class="hint"></div>
+      <div style="font-weight:700;margin-top:8px;">Excel Formula</div>
+      <div id="aiFormula" style="font-family:ui-monospace,Menlo,Consolas,monospace;background:#f9fafb;border:1px solid var(--border);border-radius:8px;padding:6px;"></div>
+      <div class="row" style="margin-top:8px;">
+        <button id="aiApplyKPI" class="btn">Apply to KPI</button>
+        <button id="aiCopy" class="btn">Copy fx</button>
+      </div>
+    </div>
+
+    <hr style="margin:14px 0;border:none;border-top:1px solid var(--border)">
+
+    <div style="font-weight:800">Properties</div>
+    <div class="hint" id="propHint">Select a block to edit.</div>
+    <div id="props" style="display:none;">
+      <div class="hint">Title</div><input id="pTitle" class="inp">
+      <div class="hint" style="margin-top:6px;">Subtitle</div><input id="pSub" class="inp">
+      <div class="hint" style="margin-top:6px;">X Y W H</div>
+      <div class="row">
+        <input id="pX" class="inp" style="width:72px"><input id="pY" class="inp" style="width:72px"><input id="pW" class="inp" style="width:72px"><input id="pH" class="inp" style="width:72px">
+      </div>
+      <div class="row" style="margin-top:8px;">
+        <button id="pApply" class="btn">Apply</button>
+        <button id="pDelete" class="btn">Delete</button>
+      </div>
+    </div>
+  </aside>
+</main>
+
+<script>
+(function(){
+  // === Layout & page constants ===
+  const size=40, rows=24, cols=36; // snap grid (not drawn)
+  const PAPER_SIZES = { Letter:{w:816,h:1056}, Legal:{w:816,h:1344}, A4:{w:794,h:1123}, A3:{w:1123,h:1587} };
+
+  // === State ===
+  let seq=1, selectedId=null;
+  let page = { size:'Letter', orientation:'portrait', margin:{top:40,right:40,bottom:40,left:40} };
+  let sheets=[{name:'Dashboard', widgets:[
+    {id:seq++, type:'chart', title:'Revenue by Month', sub:'', x:2,y:2,w:18,h:10},
+    {id:seq++, type:'kpi', title:'Total Revenue', sub:'', x:22,y:2,w:8,h:6}
+  ]},{name:'Data', widgets:[]}];
+  let active=0;
+
+  // === Shortcuts ===
+  const $=s=>document.querySelector(s);
+  const $$=s=>Array.from(document.querySelectorAll(s));
+  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+  const current=()=>sheets[active];
+
+  // === Page sizing ===
+  function dims(){
+    const base = PAPER_SIZES[page.size] || PAPER_SIZES.Letter;
+    return page.orientation==='portrait' ? {w:base.w,h:base.h} : {w:base.h,h:base.w};
   }
-});
+  function renderPageFrame(){
+    const {w,h}=dims();
+    const pageEl = $("#page");
+    pageEl.style.width = w+"px";
+    pageEl.style.height = h+"px";
+
+    const m = page.margin;
+    const inner = $("#pageInner");
+    inner.style.left = m.left+"px";
+    inner.style.right = m.right+"px";
+    inner.style.top = m.top+"px";
+    inner.style.bottom = m.bottom+"px";
+
+    const mg = $("#pageMargins");
+    mg.style.left = m.left+"px";
+    mg.style.right = m.right+"px";
+    mg.style.top = m.top+"px";
+    mg.style.bottom = m.bottom+"px";
+  }
+
+  // === Tabs ===
+  function renderTabs(){
+    const tabs=$("#tabs"); tabs.innerHTML='';
+    sheets.forEach((s,i)=>{
+      const el=document.createElement('span'); el.className='tab'+(i===active?' active':''); el.textContent=s.name;
+      el.onclick=()=>{ active=i; setSelected(null); renderAll(); };
+      tabs.appendChild(el);
+    });
+  }
+
+  // === Selection helpers ===
+  function setSelected(id){
+    selectedId = id;
+    renderProps();
+    updateDeleteButton();
+    // Toggle CSS class "sel"
+    $$(".widget").forEach(el=> el.classList.remove('sel'));
+    if(selectedId){
+      const node = document.querySelector(`[data-wid="${selectedId}"]`);
+      if(node) node.classList.add('sel');
+    }
+  }
+
+  function updateDeleteButton(){
+    const btn = $("#deleteSel");
+    if(!btn) return;
+    btn.disabled = !selectedId;
+  }
+
+  // === Widgets ===
+  function widgetEl(w){
+    const host = $("#pageInner");
+    const el=document.createElement('div');
+    el.className='widget'+(w.id===selectedId?' sel':'');
+    el.dataset.wid = String(w.id);
+    el.style.left=(w.x*size)+'px'; el.style.top=(w.y*size)+'px'; el.style.width=(w.w*size)+'px'; el.style.height=(w.h*size)+'px';
+    const t=document.createElement('div'); t.className='ttl'; t.textContent=w.title||w.type;
+    const s=document.createElement('div'); s.className='sub'; s.textContent=w.sub||'';
+    const b=document.createElement('div'); b.className='box';
+    const h=document.createElement('div'); h.className='handle';
+    el.appendChild(t); el.appendChild(s); el.appendChild(b); el.appendChild(h);
+
+    // select
+    el.addEventListener('mousedown', (e)=>{ if(e.target===h) return; setSelected(w.id); e.stopPropagation(); });
+
+    // drag
+    el.addEventListener('mousedown', (e)=>{
+      if(e.target===h) return;
+      const start={mx:e.clientX,my:e.clientY,x:w.x,y:w.y};
+      const mm=(ev)=>{ const dx=Math.round((ev.clientX-start.mx)/size), dy=Math.round((ev.clientY-start.my)/size);
+        w.x=clamp(start.x+dx,1,cols-1); w.y=clamp(start.y+dy,1,rows-1); renderWidgets(); renderProps(); };
+      const up=()=>{ document.removeEventListener('mousemove',mm); document.removeEventListener('mouseup',up); };
+      document.addEventListener('mousemove',mm); document.addEventListener('mouseup',up);
+    });
+
+    // resize
+    h.addEventListener('mousedown', (e)=>{
+      e.stopPropagation();
+      const start={mx:e.clientX,my:e.clientY,w:w.w,h:w.h};
+      const mm=(ev)=>{ const dx=Math.round((ev.clientX-start.mx)/size), dy=Math.round((ev.clientY-start.my)/size);
+        w.w=clamp(start.w+dx,2,cols-w.x); w.h=clamp(start.h+dy,2,rows-w.y); renderWidgets(); };
+      const up=()=>{ document.removeEventListener('mousemove',mm); document.removeEventListener('mouseup',up); };
+      document.addEventListener('mousemove',mm); document.addEventListener('mouseup',up);
+    });
+
+    host.appendChild(el); return el;
+  }
+
+  function renderWidgets(){
+    $("#pageInner").innerHTML='';
+    current().widgets.forEach(w=> widgetEl(w));
+    // Keep selection highlight consistent
+    if(selectedId){
+      const node = document.querySelector(`[data-wid="${selectedId}"]`);
+      if(node) node.classList.add('sel');
+    }
+  }
+
+  // === Properties ===
+  function renderProps(){
+    const box=$("#props"), hint=$("#propHint");
+    if(!selectedId){ box.style.display='none'; hint.textContent='Select a block to edit.'; return; }
+    const w=current().widgets.find(x=>x.id===selectedId); box.style.display='block'; hint.textContent='Editing '+(w.title||w.type);
+    $("#pTitle").value=w.title||''; $("#pSub").value=w.sub||''; $("#pX").value=w.x; $("#pY").value=w.y; $("#pW").value=w.w; $("#pH").value=w.h;
+  }
+
+  function renderAll(){ renderPageFrame(); renderTabs(); renderWidgets(); renderProps(); }
+
+  // === AI Assistant (rules engine starter) ===
+  const patterns = [
+    { re:/total of (\w+)\s+where\s+(\w+)\s+is\s+(.+)/i,
+      make:(numCol,condCol,val)=>`=SUMIFS(${numCol}, ${condCol}, "${val}")`,
+      explain:(numCol,condCol,val)=>`Sum of ${numCol} where ${condCol} = "${val}".` },
+    { re:/total of (\w+)/i,
+      make:(col)=>`=SUM(${col})`,
+      explain:(col)=>`Sum of ${col}.` },
+    { re:/average of (\w+)/i,
+      make:(col)=>`=AVERAGE(${col})`,
+      explain:(col)=>`Average of ${col}.` },
+    { re:/count rows where (\w+)\s+is\s+(.+)/i,
+      make:(col,val)=>`=COUNTIF(${col}, "${val}")`,
+      explain:(col,val)=>`Count of rows where ${col} = "${val}".` },
+    { re:/show this as date/i,
+      make:()=>`(format: mm/dd/yyyy)`,
+      explain:()=>`Format the selected value as a Date (MM/DD/YYYY).` },
+    { re:/round to (\d+) decimals?/i,
+      make:(n)=>`(format: round to ${n} decimals)`,
+      explain:(n)=>`Round numerical values to ${n} decimals.` },
+  ];
+  function interpretPlain(text){
+    for(const p of patterns){
+      const m = text.match(p.re);
+      if(m){ const args = m.slice(1).map(s=>s.trim()); return {formula:p.make(...args), explain:p.explain(...args)}; }
+    }
+    return null;
+  }
+
+  // === EVENTS ===
+
+  // Blocks
+  $$(".block").forEach(b=> b.addEventListener('click',()=>{ const type=b.getAttribute('data-type');
+    const presets={table:[2,12,14,8,'Table'],chart:[2,2,18,10,'Chart'],kpi:[22,2,8,6,'KPI'],button:[20,10,8,5,'Button']};
+    const d=presets[type]||[2,2,8,6,type];
+    const w={id:seq++, type, x:d[0],y:d[1],w:d[2],h:d[3], title:d[4]}; current().widgets.push(w); setSelected(w.id); renderAll();
+  }));
+
+  // Sheets
+  $("#newSheet").onclick=()=>{ sheets.push({name:'Sheet '+(sheets.length+1), widgets:[]}); active=sheets.length-1; setSelected(null); renderAll(); };
+  $("#renameSheet").onclick=()=>{ const nm=prompt('New name', sheets[active].name); if(nm){ sheets[active].name=nm; renderAll();} };
+  $("#deleteSheet").onclick=()=>{ if(sheets.length<=1) return alert('Keep at least 1'); sheets.splice(active,1); active=0; setSelected(null); renderAll(); };
+
+  // Deselect on empty canvas
+  $("#canvasWrap").addEventListener('mousedown', (e)=>{ 
+    const ids = ['page','pageInner','pageMargins'];
+    if(ids.includes(e.target.id)) { setSelected(null); renderWidgets(); }
+  });
+
+  // Properties
+  $("#pApply").onclick=()=>{ if(!selectedId) return; const w=current().widgets.find(x=>x.id===selectedId);
+    w.title=$("#pTitle").value; w.sub=$("#pSub").value; w.x=parseInt($("#pX").value||w.x); w.y=parseInt($("#pY").value||w.y);
+    w.w=parseInt($("#pW").value||w.w); w.h=parseInt($("#pH").value||w.h); renderAll(); };
+  $("#pDelete").onclick=()=>{ if(!selectedId) return; const arr=current().widgets; const i=arr.findIndex(x=>x.id===selectedId); if(i>-1) arr.splice(i,1); setSelected(null); renderAll(); };
+
+  // Delete Selected button (only acts if selected)
+  $("#deleteSel").onclick=()=>{ if(selectedId) $("#pDelete").click(); };
+
+  // Delete key — only when a block is selected and you're NOT typing
+  window.addEventListener('keydown', (e) => {
+    if (!selectedId) return;
+    const tag = (document.activeElement?.tagName || '').toUpperCase();
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || document.activeElement?.isContentEditable) return;
+    if (e.key === 'Delete' || e.key === 'Backspace') {
+      e.preventDefault();
+      $("#pDelete").click();
+    }
+  });
+
+  // Page setup
+  $("#pageSize").onchange=()=>{ page.size = $("#pageSize").value; renderPageFrame(); };
+  $("#orientation").onchange=()=>{ page.orientation = $("#orientation").value; renderPageFrame(); };
+  $("#mTop").onchange=()=>{ page.margin.top = parseInt($("#mTop").value||0); renderPageFrame(); };
+  $("#mRight").onchange=()=>{ page.margin.right = parseInt($("#mRight").value||0); renderPageFrame(); };
+  $("#mBottom").onchange=()=>{ page.margin.bottom = parseInt($("#mBottom").value||0); renderPageFrame(); };
+  $("#mLeft").onchange=()=>{ page.margin.left = parseInt($("#mLeft").value||0); renderPageFrame(); };
+
+  // Smart save toggle
+  $("#smartSave").onchange=()=>{ $("#smartFields").style.display = $("#smartSave").checked? 'block':'none'; };
+
+  // AI chips
+  $$(".chip").forEach(c=> c.addEventListener('click',()=>{ $("#aiText").value = c.getAttribute('data-ai'); }));
+
+  // AI suggest
+  $("#aiSuggest").onclick=()=>{ const t=$("#aiText").value.trim(); if(!t) return;
+    const res = interpretPlain(t);
+    if(!res){ alert("Try: total of Amount • count rows where Status is Open • show this as date • round to 2 decimals"); return; }
+    $("#aiResult").style.display='block';
+    $("#aiExplain").textContent = res.explain;
+    $("#aiFormula").textContent = res.formula;
+  };
+  $("#aiCopy").onclick=()=>{ const f=$("#aiFormula").textContent; navigator.clipboard.writeText(f); alert("Formula copied."); };
+  $("#aiApplyKPI").onclick=()=>{ if(!selectedId){ alert("Select a KPI block first."); return; }
+    const w=current().widgets.find(x=>x.id===selectedId);
+    if(w?.type!=='kpi'){ alert("Select a KPI block to apply the formula."); return; }
+    w.sub = $("#aiFormula").textContent || w.sub;
+    renderAll();
+  };
+
+  // Compile & download
+  $("#compile").onclick=async()=>{
+    const payload={
+      project: $("#projectName").value || "Workbook",
+      sheets,
+      settings: {
+        enabled: $("#smartSave").checked,
+        baseName: $("#baseName")?.value || "Report_",
+        dateFormat: $("#dateFmt")?.value || "yyyy-mm-dd",
+        requireCopyOnOpen: $("#reqCopy")?.checked ?? true,
+        templateTag: "TEMPLATE",
+        sequenceIfExists: true,
+        page
+      }
+    };
+    const res = await fetch('/api/compile', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
+    if(!res.ok){ alert('Compile failed'); return; }
+    const blob = await res.blob();
+    const a = document.createElement('a'); a.href=URL.createObjectURL(blob);
+    a.download = (payload.project || 'Workbook').replace(/\s+/g,'_') + '.xlsx';
+    a.click();
+  };
+
+  // First render
+  renderAll();
+  updateDeleteButton();
+})();
+</script>
+</body>
+</html>
