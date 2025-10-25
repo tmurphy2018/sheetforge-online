@@ -5,30 +5,33 @@
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>SheetForge – Visual Builder</title>
 <style>
-  :root{--bg:#ffffff;--ink:#0f172a;--muted:#64748b;--border:#e2e8f0;--ok:#10b981;--accent:#111827}
+  :root{--bg:#ffffff;--ink:#0f172a;--muted:#64748b;--border:#e2e8f0;--ok:#10b981;--accent:#2563eb}
   *{box-sizing:border-box}
   body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial;background:var(--bg);color:var(--ink)}
   header{position:sticky;top:0;z-index:10;background:#fff;border-bottom:1px solid var(--border)}
   .wrap{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 16px}
   .btn{padding:8px 10px;border:1px solid var(--border);background:#fff;border-radius:10px;font-weight:600;cursor:pointer}
   .btn.primary{background:var(--ok);border-color:var(--ok);color:#fff}
-  main{display:grid;grid-template-columns:320px 1fr 320px;gap:12px;padding:12px;height:calc(100vh - 64px)}
+  .btn.accent{background:var(--accent);border-color:var(--accent);color:#fff}
+  main{display:grid;grid-template-columns:320px 1fr 360px;gap:12px;padding:12px;height:calc(100vh - 64px)}
   .card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:12px}
   .tab{padding:6px 10px;border:1px solid var(--border);border-radius:999px;cursor:pointer;margin-right:6px}
   .tab.active{outline:2px solid var(--accent)}
   .block{display:flex;align-items:center;gap:10px;border:1px solid var(--border);border-radius:12px;padding:10px;cursor:pointer;margin-top:8px}
-  .stage{position:relative;height:calc(100% - 100px);border:1px solid var(--border);border-radius:12px;overflow:auto;background:#fff}
+  .stage{position:relative;height:calc(100% - 0px);border:1px solid var(--border);border-radius:12px;overflow:auto;background:#fff}
   .gridwrap{position:relative;padding:16px}
-  .cells{display:grid;grid-template-columns:repeat(36,40px);gap:4px}
-  .cell{width:40px;height:40px;border:1px solid #f1f5f9;border-radius:8px}
-  .canvas{position:relative;min-width:1080px;min-height:720px;background:repeating-linear-gradient(90deg,#fafafa,#fafafa 40px,#f5f5f5 40px,#f5f5f5 41px),repeating-linear-gradient(0deg,#fafafa,#fafafa 40px,#f5f5f5 40px,#f5f5f5 41px)}
+  .page{position:relative;margin:24px auto;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 18px rgba(0,0,0,0.06)}
+  .page-inner{position:absolute;inset:0}
+  .page-margins{position:absolute;inset:0;pointer-events:none;outline:1px dashed #d1d5db}
   .widget{position:absolute;background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 18px rgba(0,0,0,0.06);padding:8px;user-select:none}
   .widget.sel{outline:2px solid var(--accent)}
   .ttl{font-weight:800;font-size:13px}.sub{font-size:12px;color:#64748b}
   .box{margin-top:6px;border:1px dashed var(--border);border-radius:10px;height:calc(100% - 36px)}
   .handle{position:absolute;width:12px;height:12px;background:#111;border-radius:3px;right:-6px;bottom:-6px;cursor:nwse-resize}
-  .footer{position:sticky;bottom:0;border-top:1px solid var(--border);padding:8px 12px;display:flex;gap:8px;align-items:center;justify-content:space-between;background:#fff;border-radius:0 0 12px 12px}
   .inp{flex:1;border:1px solid var(--border);border-radius:10px;padding:10px}
+  .row{display:flex;gap:8px;align-items:center}
+  .hint{font-size:13px;color:#64748b}
+  .chip{display:inline-block;border:1px solid var(--border);border-radius:999px;padding:6px 10px;margin-right:6px;margin-top:6px;cursor:pointer;background:#fff}
 </style>
 </head>
 <body>
@@ -38,82 +41,127 @@
       <div style="width:36px;height:36px;border-radius:10px;background:#111;color:#fff;display:grid;place-items:center;font-weight:800">SF</div>
       <div>
         <div style="font-weight:800">SheetForge Visual Builder</div>
-        <div style="font-size:13px;color:#64748b">Grid + Canvas • Multi-sheet • Smart Save-As</div>
+        <div class="hint">Canvas • Multi-sheet • AI Assistant</div>
       </div>
     </div>
-    <div style="display:flex;align-items:center;gap:8px;">
+    <div class="row">
       <input id="projectName" value="Untitled Workbook" style="border:1px solid var(--border);border-radius:8px;padding:6px 8px;">
       <button id="compile" class="btn primary">Compile & Download</button>
+      <button id="deleteSel" class="btn">Delete Selected</button>
     </div>
   </div>
 </header>
 
 <main>
+  <!-- LEFT: Sheets, Blocks, Page Setup -->
   <aside class="card">
     <div style="font-weight:800">Sheets</div>
     <div id="tabs"></div>
-    <div style="display:flex;gap:8px;margin-top:8px;">
+    <div class="row" style="margin-top:8px;">
       <button id="newSheet" class="btn">+ New</button>
       <button id="renameSheet" class="btn">Rename</button>
       <button id="deleteSheet" class="btn">Delete</button>
     </div>
 
     <div style="font-weight:800;margin-top:14px;">Blocks</div>
-    <div style="font-size:13px;color:#64748b">Click to add</div>
+    <div class="hint">Click to add</div>
     <div class="block" data-type="table">📋 Table</div>
     <div class="block" data-type="chart">📊 Chart</div>
     <div class="block" data-type="kpi">🎯 KPI</div>
-    <div class="block" data-type="form">📝 Form</div>
     <div class="block" data-type="button">🔘 Button</div>
 
+    <div style="font-weight:800;margin-top:14px;">Page Setup</div>
+    <div class="row">
+      <label class="hint" style="width:92px;">Size</label>
+      <select id="pageSize" class="inp" style="padding:6px 8px;">
+        <option value="Letter" selected>Letter (8.5×11)</option>
+        <option value="Legal">Legal (8.5×14)</option>
+        <option value="A4">A4 (210×297)</option>
+        <option value="A3">A3 (297×420)</option>
+      </select>
+    </div>
+    <div class="row" style="margin-top:6px;">
+      <label class="hint" style="width:92px;">Orientation</label>
+      <select id="orientation" class="inp" style="padding:6px 8px;">
+        <option value="portrait" selected>Portrait</option>
+        <option value="landscape">Landscape</option>
+      </select>
+    </div>
+    <div class="row" style="margin-top:6px;">
+      <label class="hint" style="width:92px;">Margins</label>
+      <input id="mTop" type="number" value="40" style="width:64px" class="inp">
+      <input id="mRight" type="number" value="40" style="width:64px" class="inp">
+      <input id="mBottom" type="number" value="40" style="width:64px" class="inp">
+      <input id="mLeft" type="number" value="40" style="width:64px" class="inp">
+    </div>
+
     <div style="font-weight:800;margin-top:14px;">Workbook Settings</div>
-    <label style="display:flex;align-items:center;gap:8px;margin-top:6px;">
-      <input type="checkbox" id="smartSave"> Enable Smart Save-As (.xlsm)
+    <label class="row" style="margin-top:6px;">
+      <input type="checkbox" id="smartSave"> <span>Enable Smart Save-As (.xlsm)</span>
     </label>
     <div id="smartFields" style="display:none;">
-      <div style="font-size:13px;color:#64748b">Base name</div>
-      <input id="baseName" value="Report_" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:6px 8px;">
-      <div style="font-size:13px;color:#64748b;margin-top:6px;">Date format</div>
-      <input id="dateFmt" value="yyyy-mm-dd" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:6px 8px;">
-      <label style="display:flex;align-items:center;gap:8px;margin-top:6px;">
-        <input type="checkbox" id="reqCopy" checked> Require new copy on open
+      <div class="hint">Base name</div>
+      <input id="baseName" value="Report_" class="inp">
+      <div class="hint" style="margin-top:6px;">Date format</div>
+      <input id="dateFmt" value="yyyy-mm-dd" class="inp">
+      <label class="row" style="margin-top:6px;">
+        <input type="checkbox" id="reqCopy" checked> <span>Require new copy on open</span>
       </label>
     </div>
   </aside>
 
+  <!-- CENTER: Canvas -->
   <section class="card" style="display:flex;flex-direction:column;">
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-      <button id="modeGrid" class="btn">Grid</button>
-      <button id="modeCanvas" class="btn">Canvas</button>
-      <div style="font-size:13px;color:#64748b">Drag to move, corner to resize</div>
+    <div class="row" style="margin-bottom:8px;">
+      <div class="hint">Drag to move • use corner to resize • Press Delete to remove</div>
     </div>
     <div class="stage">
-      <div id="gridWrap" class="gridwrap">
-        <div class="cells" id="cells"></div>
-        <div id="gridWidgets"></div>
+      <div id="canvasWrap" class="gridwrap">
+        <div id="page" class="page" style="width:816px;height:1056px;">
+          <div id="pageInner" class="page-inner"></div>
+          <div id="pageMargins" class="page-margins"></div>
+        </div>
       </div>
-      <div id="canvasWrap" class="gridwrap" style="display:none;">
-        <div class="canvas" id="canvas"></div>
-      </div>
-    </div>
-    <div class="footer">
-      <div style="font-size:13px;color:#64748b">Try commands: “add chart” • “auto layout”</div>
-      <input id="cmd" class="inp" placeholder="Describe a change…">
-      <button id="apply" class="btn">Apply</button>
     </div>
   </section>
 
-  <aside class="card">
-    <div style="font-weight:800">Properties</div>
-    <div style="font-size:13px;color:#64748b" id="propHint">Select a block to edit.</div>
-    <div id="props" style="display:none;">
-      <div style="font-size:13px;color:#64748b">Title</div><input id="pTitle" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:6px 8px;">
-      <div style="font-size:13px;color:#64748b;margin-top:6px;">Subtitle</div><input id="pSub" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:6px 8px;">
-      <div style="font-size:13px;color:#64748b;margin-top:6px;">X Y W H</div>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">
-        <input id="pX"><input id="pY"><input id="pW"><input id="pH">
+  <!-- RIGHT: AI Assistant + Properties -->
+  <aside class="card" id="rightPanel">
+    <div style="font-weight:800">AI Assistant</div>
+    <div class="hint">Describe what you want. Examples:</div>
+    <div class="chip" data-ai="total of Amount">total of Amount</div>
+    <div class="chip" data-ai="count rows where Status is Open">count rows where Status is Open</div>
+    <div class="chip" data-ai="show this as date">show this as date</div>
+    <div class="chip" data-ai="round to 2 decimals">round to 2 decimals</div>
+
+    <textarea id="aiText" class="inp" style="margin-top:8px;height:90px;" placeholder="e.g., total of Amount where Status is Paid"></textarea>
+    <div class="row">
+      <button id="aiSuggest" class="btn accent">Explain & Suggest</button>
+    </div>
+
+    <div id="aiResult" style="display:none;margin-top:10px;border:1px solid var(--border);border-radius:10px;padding:10px;">
+      <div style="font-weight:700;">Plain English</div>
+      <div id="aiExplain" class="hint"></div>
+      <div style="font-weight:700;margin-top:8px;">Excel Formula</div>
+      <div id="aiFormula" style="font-family:ui-monospace,Menlo,Consolas,monospace;background:#f9fafb;border:1px solid var(--border);border-radius:8px;padding:6px;"></div>
+      <div class="row" style="margin-top:8px;">
+        <button id="aiApplyKPI" class="btn">Apply to KPI</button>
+        <button id="aiCopy" class="btn">Copy fx</button>
       </div>
-      <div style="display:flex;gap:8px;margin-top:8px;">
+    </div>
+
+    <hr style="margin:14px 0;border:none;border-top:1px solid var(--border)">
+
+    <div style="font-weight:800">Properties</div>
+    <div class="hint" id="propHint">Select a block to edit.</div>
+    <div id="props" style="display:none;">
+      <div class="hint">Title</div><input id="pTitle" class="inp">
+      <div class="hint" style="margin-top:6px;">Subtitle</div><input id="pSub" class="inp">
+      <div class="hint" style="margin-top:6px;">X Y W H</div>
+      <div class="row">
+        <input id="pX" class="inp" style="width:72px"><input id="pY" class="inp" style="width:72px"><input id="pW" class="inp" style="width:72px"><input id="pH" class="inp" style="width:72px">
+      </div>
+      <div class="row" style="margin-top:8px;">
         <button id="pApply" class="btn">Apply</button>
         <button id="pDelete" class="btn">Delete</button>
       </div>
@@ -123,20 +171,51 @@
 
 <script>
 (function(){
-  const size=40, rows=24, cols=36;
+  // === Layout constants ===
+  const size=40, rows=24, cols=36; // snapping grid (not drawn)
+  const PAPER_SIZES = { Letter:{w:816,h:1056}, Legal:{w:816,h:1344}, A4:{w:794,h:1123}, A3:{w:1123,h:1587} };
+
+  // === State ===
   let seq=1, selectedId=null;
-  let sheets=[{name:'Dashboard', widgets:[{id:seq++, type:'chart', title:'Revenue by Month', sub:'', x:2,y:2,w:18,h:10},{id:seq++, type:'kpi', title:'Total Revenue', sub:'', x:2,y:14,w:8,h:6}]},{name:'Data', widgets:[]}];
+  let page = { size:'Letter', orientation:'portrait', margin:{top:40,right:40,bottom:40,left:40} };
+  let sheets=[{name:'Dashboard', widgets:[
+    {id:seq++, type:'chart', title:'Revenue by Month', sub:'', x:2,y:2,w:18,h:10},
+    {id:seq++, type:'kpi', title:'Total Revenue', sub:'', x:22,y:2,w:8,h:6}
+  ]},{name:'Data', widgets:[]}];
   let active=0;
 
+  // === Helpers ===
   const $=s=>document.querySelector(s);
   const $$=s=>Array.from(document.querySelectorAll(s));
   const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
   const current=()=>sheets[active];
 
-  function buildGrid(){
-    const cells=$("#cells"); cells.innerHTML='';
-    for(let r=0;r<rows;r++){ for(let c=0;c<cols;c++){ const d=document.createElement('div'); d.className='cell'; cells.appendChild(d); } }
+  // === Page sizing ===
+  function dims(){
+    const base = PAPER_SIZES[page.size] || PAPER_SIZES.Letter;
+    return page.orientation==='portrait' ? {w:base.w,h:base.h} : {w:base.h,h:base.w};
   }
+  function renderPageFrame(){
+    const {w,h}=dims();
+    const pageEl = $("#page");
+    pageEl.style.width = w+"px";
+    pageEl.style.height = h+"px";
+
+    const m = page.margin;
+    const inner = $("#pageInner");
+    inner.style.left = m.left+"px";
+    inner.style.right = m.right+"px";
+    inner.style.top = m.top+"px";
+    inner.style.bottom = m.bottom+"px";
+
+    const mg = $("#pageMargins");
+    mg.style.left = m.left+"px";
+    mg.style.right = m.right+"px";
+    mg.style.top = m.top+"px";
+    mg.style.bottom = m.bottom+"px";
+  }
+
+  // === UI building ===
   function renderTabs(){
     const tabs=$("#tabs"); tabs.innerHTML='';
     sheets.forEach((s,i)=>{
@@ -145,13 +224,18 @@
       tabs.appendChild(el);
     });
   }
+
   function widgetEl(w){
-    const el=document.createElement('div'); el.className='widget'+(w.id===selectedId?' sel':''); el.style.left=(w.x*size)+'px'; el.style.top=(w.y*size)+'px'; el.style.width=(w.w*size)+'px'; el.style.height=(w.h*size)+'px';
+    const host = $("#pageInner");
+    const el=document.createElement('div'); el.className='widget'+(w.id===selectedId?' sel':'');
+    el.style.left=(w.x*size)+'px'; el.style.top=(w.y*size)+'px'; el.style.width=(w.w*size)+'px'; el.style.height=(w.h*size)+'px';
     const t=document.createElement('div'); t.className='ttl'; t.textContent=w.title||w.type;
     const s=document.createElement('div'); s.className='sub'; s.textContent=w.sub||'';
     const b=document.createElement('div'); b.className='box';
     const h=document.createElement('div'); h.className='handle';
     el.appendChild(t); el.appendChild(s); el.appendChild(b); el.appendChild(h);
+
+    // select
     el.addEventListener('mousedown', (e)=>{ if(e.target===h) return; selectedId=w.id; renderProps(); e.stopPropagation(); });
 
     // drag
@@ -159,63 +243,128 @@
       if(e.target===h) return;
       const start={mx:e.clientX,my:e.clientY,x:w.x,y:w.y};
       const mm=(ev)=>{ const dx=Math.round((ev.clientX-start.mx)/size), dy=Math.round((ev.clientY-start.my)/size);
-        w.x=clamp(start.x+dx,1,cols-1); w.y=clamp(start.y+dy,1,rows-1); renderAll(false); };
+        w.x=clamp(start.x+dx,1,cols-1); w.y=clamp(start.y+dy,1,rows-1); renderWidgets(); renderProps(); };
       const up=()=>{ document.removeEventListener('mousemove',mm); document.removeEventListener('mouseup',up); };
       document.addEventListener('mousemove',mm); document.addEventListener('mouseup',up);
     });
+
     // resize
     h.addEventListener('mousedown', (e)=>{
       e.stopPropagation();
       const start={mx:e.clientX,my:e.clientY,w:w.w,h:w.h};
       const mm=(ev)=>{ const dx=Math.round((ev.clientX-start.mx)/size), dy=Math.round((ev.clientY-start.my)/size);
-        w.w=clamp(start.w+dx,2,cols-w.x); w.h=clamp(start.h+dy,2,rows-w.y); renderAll(false); };
+        w.w=clamp(start.w+dx,2,cols-w.x); w.h=clamp(start.h+dy,2,rows-w.y); renderWidgets(); };
       const up=()=>{ document.removeEventListener('mousemove',mm); document.removeEventListener('mouseup',up); };
       document.addEventListener('mousemove',mm); document.addEventListener('mouseup',up);
     });
-    return el;
+
+    host.appendChild(el); return el;
   }
+
   function renderWidgets(){
-    const gridHost=$("#gridWidgets"); gridHost.innerHTML='';
-    const canvasHost=$("#canvas"); canvasHost.innerHTML='';
-    current().widgets.forEach(w=>{ gridHost.appendChild(widgetEl(w)); canvasHost.appendChild(widgetEl(w)); });
+    $("#pageInner").innerHTML='';
+    current().widgets.forEach(w=> widgetEl(w));
+    // show selection state
+    $$(".widget").forEach(node=>{
+      const id = parseInt(node.querySelector('.ttl') ? node.querySelector('.ttl').innerText === '' : false);
+    });
   }
+
   function renderProps(){
     const box=$("#props"), hint=$("#propHint");
     if(!selectedId){ box.style.display='none'; hint.textContent='Select a block to edit.'; return; }
     const w=current().widgets.find(x=>x.id===selectedId); box.style.display='block'; hint.textContent='Editing '+(w.title||w.type);
     $("#pTitle").value=w.title||''; $("#pSub").value=w.sub||''; $("#pX").value=w.x; $("#pY").value=w.y; $("#pW").value=w.w; $("#pH").value=w.h;
   }
-  function renderAll(rebuildGrid=true){ if(rebuildGrid) buildGrid(); renderTabs(); renderWidgets(); renderProps(); }
 
-  // events
+  function renderAll(){ renderPageFrame(); renderTabs(); renderWidgets(); renderProps(); }
+
+  // === AI Assistant (rules engine starter) ===
+  const patterns = [
+    { re:/total of (\\w+)\\s+where\\s+(\\w+)\\s+is\\s+(.+)/i,
+      make:(numCol,condCol,val)=>`=SUMIFS(${numCol}, ${condCol}, "${val}")`,
+      explain:(numCol,condCol,val)=>`Sum of ${numCol} where ${condCol} = "${val}".` },
+    { re:/total of (\\w+)/i,
+      make:(col)=>`=SUM(${col})`,
+      explain:(col)=>`Sum of ${col}.` },
+    { re:/average of (\\w+)/i,
+      make:(col)=>`=AVERAGE(${col})`,
+      explain:(col)=>`Average of ${col}.` },
+    { re:/count rows where (\\w+)\\s+is\\s+(.+)/i,
+      make:(col,val)=>`=COUNTIF(${col}, "${val}")`,
+      explain:(col,val)=>`Count of rows where ${col} = "${val}".` },
+    { re:/show this as date/i,
+      make:()=>`(format: mm/dd/yyyy)`,
+      explain:()=>`Format the selected value as a Date (MM/DD/YYYY).` },
+    { re:/round to (\\d+) decimals?/i,
+      make:(n)=>`(format: round to ${n} decimals)`,
+      explain:(n)=>`Round numerical values to ${n} decimals.` },
+  ];
+  function interpretPlain(text){
+    for(const p of patterns){
+      const m = text.match(p.re);
+      if(m){ const args = m.slice(1).map(s=>s.trim()); return {formula:p.make(...args), explain:p.explain(...args)}; }
+    }
+    return null;
+  }
+
+  // === Events ===
+  // Add blocks
   $$(".block").forEach(b=> b.addEventListener('click',()=>{ const type=b.getAttribute('data-type');
-    const presets={table:[2,14,14,8,'Table'],chart:[2,2,18,10,'Chart'],kpi:[22,2,8,6,'KPI'],form:[22,10,12,8,'Form'],button:[20,6,8,5,'Button']};
+    const presets={table:[2,12,14,8,'Table'],chart:[2,2,18,10,'Chart'],kpi:[22,2,8,6,'KPI'],button:[20,10,8,5,'Button']};
     const d=presets[type]||[2,2,8,6,type];
-    const w={id:seq++, type, x:d[0],y:d[1],w:d[2],h:d[3], title:d[4]}; current().widgets.push(w); selectedId=w.id; renderAll(false);
+    const w={id:seq++, type, x:d[0],y:d[1],w:d[2],h:d[3], title:d[4]}; current().widgets.push(w); selectedId=w.id; renderAll();
   }));
-  $("#newSheet").onclick=()=>{ sheets.push({name:'Sheet '+(sheets.length+1), widgets:[]}); active=sheets.length-1; renderAll(false); };
-  $("#renameSheet").onclick=()=>{ const nm=prompt('New name', sheets[active].name); if(nm){ sheets[active].name=nm; renderAll(false);} };
-  $("#deleteSheet").onclick=()=>{ if(sheets.length<=1) return alert('Keep at least 1'); sheets.splice(active,1); active=0; selectedId=null; renderAll(false); };
-  $("#modeGrid").onclick=()=>{ $("#gridWrap").style.display='block'; $("#canvasWrap").style.display='none'; };
-  $("#modeCanvas").onclick=()=>{ $("#gridWrap").style.display='none'; $("#canvasWrap").style.display='block'; };
+
+  // Sheets
+  $("#newSheet").onclick=()=>{ sheets.push({name:'Sheet '+(sheets.length+1), widgets:[]}); active=sheets.length-1; selectedId=null; renderAll(); };
+  $("#renameSheet").onclick=()=>{ const nm=prompt('New name', sheets[active].name); if(nm){ sheets[active].name=nm; renderAll();} };
+  $("#deleteSheet").onclick=()=>{ if(sheets.length<=1) return alert('Keep at least 1'); sheets.splice(active,1); active=0; selectedId=null; renderAll(); };
+
+  // Canvas deselect
+  $("#canvasWrap").addEventListener('mousedown', (e)=>{ if(e.target.id==='page' || e.target.id==='pageInner' || e.target.id==='pageMargins') {selectedId=null; renderProps();} });
+
+  // Properties
   $("#pApply").onclick=()=>{ if(!selectedId) return; const w=current().widgets.find(x=>x.id===selectedId);
     w.title=$("#pTitle").value; w.sub=$("#pSub").value; w.x=parseInt($("#pX").value||w.x); w.y=parseInt($("#pY").value||w.y);
-    w.w=parseInt($("#pW").value||w.w); w.h=parseInt($("#pH").value||w.h); renderAll(false); };
-  $("#pDelete").onclick=()=>{ if(!selectedId) return; const arr=current().widgets; const i=arr.findIndex(x=>x.id===selectedId); if(i>-1) arr.splice(i,1); selectedId=null; renderAll(false); };
-  $("#gridWrap").addEventListener('mousedown', (e)=>{ if(e.target.id==='gridWrap') {selectedId=null; renderProps();} });
-  $("#canvasWrap").addEventListener('mousedown', (e)=>{ if(e.target.id==='canvas') {selectedId=null; renderProps();} });
+    w.w=parseInt($("#pW").value||w.w); w.h=parseInt($("#pH").value||w.h); renderAll(); };
+  $("#pDelete").onclick=()=>{ if(!selectedId) return; const arr=current().widgets; const i=arr.findIndex(x=>x.id===selectedId); if(i>-1) arr.splice(i,1); selectedId=null; renderAll(); };
+  $("#deleteSel").onclick=()=>{ $("#pDelete").click(); };
 
+  // Delete key shortcut
+  window.addEventListener('keydown', (e)=>{ if(selectedId && (e.key==='Delete' || e.key==='Backspace')){ e.preventDefault(); $("#pDelete").click(); } });
+
+  // Page setup controls
+  $("#pageSize").onchange=()=>{ page.size = $("#pageSize").value; renderPageFrame(); };
+  $("#orientation").onchange=()=>{ page.orientation = $("#orientation").value; renderPageFrame(); };
+  $("#mTop").onchange=()=>{ page.margin.top = parseInt($("#mTop").value||0); renderPageFrame(); };
+  $("#mRight").onchange=()=>{ page.margin.right = parseInt($("#mRight").value||0); renderPageFrame(); };
+  $("#mBottom").onchange=()=>{ page.margin.bottom = parseInt($("#mBottom").value||0); renderPageFrame(); };
+  $("#mLeft").onchange=()=>{ page.margin.left = parseInt($("#mLeft").value||0); renderPageFrame(); };
+
+  // Smart save toggle
   $("#smartSave").onchange=()=>{ $("#smartFields").style.display = $("#smartSave").checked? 'block':'none'; };
 
-  $("#apply").onclick=()=>{ const t=$("#cmd").value.trim().toLowerCase();
-    if(t.includes("add") && t.includes("chart")) { $$(".block[data-type='chart']")[0].click(); }
-    else if(t.includes("add") && t.includes("table")) { $$(".block[data-type='table']")[0].click(); }
-    else if(t.includes("auto")) { current().widgets.forEach((w,i)=>{ w.x = (i%2===0)?2:20; w.y = 2 + Math.floor(i/2)*10; w.w = (i%2===0)?16:14; w.h = 8; }); renderAll(false); }
-    else { alert("Try: add chart • add table • auto layout"); }
-    $("#cmd").value='';
+  // AI chips
+  $$(".chip").forEach(c=> c.addEventListener('click',()=>{ $("#aiText").value = c.getAttribute('data-ai'); }));
+
+  // AI suggest
+  $("#aiSuggest").onclick=()=>{ const t=$("#aiText").value.trim(); if(!t) return;
+    const res = interpretPlain(t);
+    if(!res){ alert("I couldn't parse that. Try: total of Amount • count rows where Status is Open • show this as date"); return; }
+    $("#aiResult").style.display='block';
+    $("#aiExplain").textContent = res.explain;
+    $("#aiFormula").textContent = res.formula;
+  };
+  $("#aiCopy").onclick=()=>{ const f=$("#aiFormula").textContent; navigator.clipboard.writeText(f); alert("Formula copied."); };
+  $("#aiApplyKPI").onclick=()=>{ if(!selectedId){ alert("Select a KPI block first."); return; }
+    const w=current().widgets.find(x=>x.id===selectedId);
+    if(w?.type!=='kpi'){ alert("Select a KPI block to apply the formula."); return; }
+    w.sub = $("#aiFormula").textContent || w.sub;
+    renderAll();
   };
 
-  // compile & download via backend on same host
+  // Compile & download
   $("#compile").onclick=async()=>{
     const payload={
       project: $("#projectName").value || "Workbook",
@@ -226,7 +375,8 @@
         dateFormat: $("#dateFmt")?.value || "yyyy-mm-dd",
         requireCopyOnOpen: $("#reqCopy")?.checked ?? true,
         templateTag: "TEMPLATE",
-        sequenceIfExists: true
+        sequenceIfExists: true,
+        page
       }
     };
     const res = await fetch('/api/compile', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
@@ -237,7 +387,8 @@
     a.click();
   };
 
-  renderAll(true);
+  // Initial render
+  renderAll();
 })();
 </script>
 </body>
