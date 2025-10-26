@@ -14,7 +14,7 @@
   .btn[disabled]{opacity:.5;cursor:not-allowed}
   .btn.primary{background:var(--ok);border-color:var(--ok);color:#fff}
   .btn.accent{background:var(--accent);border-color:var(--accent);color:#fff}
-  main{display:grid;grid-template-columns:320px 1fr 360px;gap:12px;padding:12px;height:calc(100vh - 64px)}
+  main{display:grid;grid-template-columns:320px 1fr 380px;gap:12px;padding:12px;height:calc(100vh - 64px)}
   .card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:12px}
   .tabsbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
   .tab{padding:6px 10px;border:1px solid var(--border);border-radius:999px;cursor:pointer}
@@ -28,12 +28,24 @@
   .widget{position:absolute;background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 18px rgba(0,0,0,0.06);padding:8px;user-select:none}
   .widget.sel{outline:2px solid var(--accent)}
   .ttl{font-weight:800;font-size:13px}.sub{font-size:12px;color:#64748b}
-  .box{margin-top:6px;border:1px dashed var(--border);border-radius:10px;height:calc(100% - 36px)}
+  .box{margin-top:6px;border:1px dashed var(--border);border-radius:10px;height:calc(100% - 36px);overflow:hidden}
   .handle{position:absolute;width:12px;height:12px;background:#111;border-radius:3px;right:-6px;bottom:-6px;cursor:nwse-resize}
   .inp{flex:1;border:1px solid var(--border);border-radius:10px;padding:10px}
   .row{display:flex;gap:8px;align-items:center}
   .hint{font-size:13px;color:#64748b}
   .chip{display:inline-block;border:1px solid var(--border);border-radius:999px;padding:6px 10px;margin-right:6px;margin-top:6px;cursor:pointer;background:#fff}
+
+  /* Table styles */
+  .table{width:100%;height:100%;display:flex;flex-direction:column}
+  .thead,.tfoot{background:#f8fafc;border-bottom:1px solid var(--border)}
+  .tbody{flex:1;overflow:auto}
+  .trow{display:grid;gap:6px;padding:6px 8px}
+  .tcell{border:1px solid var(--border);border-radius:8px;padding:6px 8px;font-size:13px;background:#fff}
+  .th{font-weight:700;background:#f9fafb}
+  .tfoot .tcell{background:#f9fafb;font-weight:700}
+
+  /* Chart */
+  .chartwrap{width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#fafafa;border:1px dashed var(--border);border-radius:10px}
 
   /* Context menu */
   .ctx{position:fixed;z-index:1000;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:0 12px 24px rgba(0,0,0,.12);min-width:220px;overflow:hidden}
@@ -61,7 +73,7 @@
 </header>
 
 <main>
-  <!-- LEFT: Blocks, Page Setup, Workbook Settings (Sheets moved to center top) -->
+  <!-- LEFT: Blocks, Page Setup, Workbook Settings -->
   <aside class="card">
     <div style="font-weight:800">Blocks</div>
     <div class="hint">Click to add</div>
@@ -163,7 +175,9 @@
 
     <div style="font-weight:800">Properties</div>
     <div class="hint" id="propHint">Select a block to edit.</div>
-    <div id="props" style="display:none;">
+
+    <!-- Generic -->
+    <div id="propsCommon" style="display:none;margin-top:8px;">
       <div class="hint">Title</div><input id="pTitle" class="inp">
       <div class="hint" style="margin-top:6px;">Subtitle</div><input id="pSub" class="inp">
       <div class="hint" style="margin-top:6px;">X Y W H</div>
@@ -173,6 +187,78 @@
       <div class="row" style="margin-top:8px;">
         <button id="pApply" class="btn">Apply</button>
         <button id="pDelete" class="btn">Delete</button>
+      </div>
+    </div>
+
+    <!-- Table props -->
+    <div id="propsTable" style="display:none;margin-top:10px;">
+      <div style="font-weight:700;margin-bottom:6px;">Table</div>
+      <div class="row">
+        <label class="hint" style="width:120px;">Rows</label>
+        <input id="tRows" type="number" min="1" class="inp" style="width:90px">
+        <label class="hint" style="width:120px;">Columns</label>
+        <input id="tCols" type="number" min="1" class="inp" style="width:90px">
+      </div>
+      <div class="row" style="margin-top:6px;">
+        <button id="tAddRow" class="btn">+ Row</button>
+        <button id="tDelRow" class="btn">– Row</button>
+        <button id="tAddCol" class="btn">+ Col</button>
+        <button id="tDelCol" class="btn">– Col</button>
+      </div>
+
+      <div class="row" style="margin-top:10px;">
+        <label class="hint" style="width:120px;">Format column</label>
+        <select id="tFormatCol" class="inp" style="padding:6px;">
+        </select>
+      </div>
+      <div class="row" style="margin-top:6px;">
+        <select id="tFormatType" class="inp" style="padding:6px;">
+          <option value="text" selected>Text</option>
+          <option value="number">Number</option>
+          <option value="currency">Currency</option>
+          <option value="date">Date</option>
+          <option value="percent">Percent</option>
+        </select>
+        <input id="tDecimals" type="number" min="0" max="6" value="2" class="inp" style="width:90px" title="Decimals">
+      </div>
+
+      <div class="row" style="margin-top:10px;">
+        <label class="hint" style="width:120px;">Footer totals</label>
+        <select id="tAggType" class="inp" style="padding:6px;">
+          <option value="none" selected>None</option>
+          <option value="sum">Sum</option>
+          <option value="avg">Average</option>
+          <option value="count">Count</option>
+          <option value="min">Min</option>
+          <option value="max">Max</option>
+        </select>
+        <label class="hint" style="width:120px;">On column</label>
+        <select id="tAggCol" class="inp" style="padding:6px;"></select>
+      </div>
+    </div>
+
+    <!-- Chart props -->
+    <div id="propsChart" style="display:none;margin-top:10px;">
+      <div style="font-weight:700;margin-bottom:6px;">Chart</div>
+      <div class="row">
+        <label class="hint" style="width:120px;">Type</label>
+        <select id="cType" class="inp" style="padding:6px;">
+          <option value="bar" selected>Bar</option>
+          <option value="line">Line</option>
+          <option value="pie">Pie</option>
+        </select>
+      </div>
+      <div class="row" style="margin-top:6px;">
+        <label class="hint" style="width:120px;">Source Table</label>
+        <select id="cSource" class="inp" style="padding:6px;"></select>
+      </div>
+      <div class="row" style="margin-top:6px;">
+        <label class="hint" style="width:120px;">Category (X)</label>
+        <select id="cCategory" class="inp" style="padding:6px;"></select>
+      </div>
+      <div class="row" style="margin-top:6px;">
+        <label class="hint" style="width:120px;">Value (Y)</label>
+        <select id="cValue" class="inp" style="padding:6px;"></select>
       </div>
     </div>
   </aside>
@@ -189,21 +275,30 @@
   <div class="ctx-sep"></div>
   <div class="ctx-item" data-act="duplicate">📑 Duplicate Selected</div>
   <div class="ctx-item" data-act="delete">🗑️ Delete Selected</div>
+  <div class="ctx-sep"></div>
+  <div class="ctx-item" data-act="t-add-row">➕ Table: Add Row</div>
+  <div class="ctx-item" data-act="t-add-col">➕ Table: Add Col</div>
+  <div class="ctx-item" data-act="t-del-row">➖ Table: Del Row</div>
+  <div class="ctx-item" data-act="t-del-col">➖ Table: Del Col</div>
 </div>
 
 <script>
 (function(){
   // === Layout & page constants ===
-  const size=40, rows=24, cols=36; // snap grid (not drawn)
+  const size=40, rows=24, cols=36; // snap grid
   const PAPER_SIZES = { Letter:{w:816,h:1056}, Legal:{w:816,h:1344}, A4:{w:794,h:1123}, A3:{w:1123,h:1587} };
 
   // === State ===
   let seq=1, selectedId=null;
   let page = { size:'Letter', orientation:'portrait', margin:{top:40,right:40,bottom:40,left:40} };
   let sheets=[{name:'Dashboard', widgets:[
-    {id:seq++, type:'chart', title:'Revenue by Month', sub:'', x:2,y:2,w:18,h:10},
-    {id:seq++, type:'kpi', title:'Total Revenue', sub:'', x:22,y:2,w:8,h:6}
-  ]},{name:'Data', widgets:[]}];
+    {id:seq++, type:'table', title:'Data Table', sub:'', x:2,y:2,w:20,h:12,
+      table:{ rows:5, cols:4, headers:["Item","Qty","Price","Date"], formats:["text","number","currency","date"], decimals:[0,0,2,0],
+              values: Array.from({length:5}, (_,r)=>["Item "+(r+1), String(1+r), String(10*(r+1)), "2025-01-0"+((r%9)+1)]),
+              footer:{agg:"sum", col:2}} },
+    {id:seq++, type:'chart', title:'Sales by Item', sub:'', x:24,y:2,w:10,h:10,
+      chart:{ kind:"bar", source:null, catCol:0, valCol:2 } }
+  ]},{name:'Sheet 2', widgets:[]}];
   let active=0;
 
   // === Shortcuts ===
@@ -222,19 +317,15 @@
     const pageEl = $("#page");
     pageEl.style.width = w+"px";
     pageEl.style.height = h+"px";
-
     const m = page.margin;
     const inner = $("#pageInner");
     inner.style.left = m.left+"px";
     inner.style.right = m.right+"px";
     inner.style.top = m.top+"px";
     inner.style.bottom = m.bottom+"px";
-
     const mg = $("#pageMargins");
-    mg.style.left = m.left+"px";
-    mg.style.right = m.right+"px";
-    mg.style.top = m.top+"px";
-    mg.style.bottom = m.bottom+"px";
+    mg.style.left = m.left+"px"; mg.style.right = m.right+"px";
+    mg.style.top = m.top+"px"; mg.style.bottom = m.bottom+"px";
   }
 
   // === Tabs at top of canvas ===
@@ -252,7 +343,6 @@
     selectedId = id;
     renderProps();
     updateDeleteButton();
-    // Toggle CSS class "sel"
     $$(".widget").forEach(el=> el.classList.remove('sel'));
     if(selectedId){
       const node = document.querySelector(`[data-wid="${selectedId}"]`);
@@ -265,7 +355,7 @@
     btn.disabled = !selectedId;
   }
 
-  // === Auto Layout (simple 2-column within margins) ===
+  // === Auto Layout (simple 2-col)
   function autoLayout(){
     const m = page.margin;
     const colWidthCells = Math.floor((dims().w - m.left - m.right) / size);
@@ -282,18 +372,46 @@
     renderAll();
   }
 
-  // === Widget factory & render ===
+  // === FORMAT HELPERS ===
+  function formatValue(val, type, decimals=2){
+    if(val==null) return '';
+    const raw = (''+val).trim();
+    if(type==='number'){ const n=Number(raw); return isFinite(n) ? n.toFixed(decimals).replace(/\.0+$/,''): raw; }
+    if(type==='currency'){ const n=Number(raw); return isFinite(n) ? '$'+n.toFixed(decimals) : raw; }
+    if(type==='percent'){ const n=Number(raw); return isFinite(n) ? (n*100).toFixed(decimals)+'%' : raw; }
+    if(type==='date'){ const d=new Date(raw); return isNaN(d.getTime())? raw : d.toISOString().slice(0,10); }
+    return raw;
+  }
+  function aggregate(vals, agg){
+    const nums = vals.map(v=>Number((''+v).replace(/[^0-9.\-]/g,''))).filter(v=>isFinite(v));
+    if(!nums.length) return '';
+    if(agg==='sum') return nums.reduce((a,b)=>a+b,0);
+    if(agg==='avg') return nums.reduce((a,b)=>a+b,0)/nums.length;
+    if(agg==='count') return nums.length;
+    if(agg==='min') return Math.min(...nums);
+    if(agg==='max') return Math.max(...nums);
+    return '';
+  }
+
+  // === WIDGET RENDERERS ===
   function widgetEl(w){
     const host = $("#pageInner");
     const el=document.createElement('div');
     el.className='widget'+(w.id===selectedId?' sel':'');
     el.dataset.wid = String(w.id);
     el.style.left=(w.x*size)+'px'; el.style.top=(w.y*size)+'px'; el.style.width=(w.w*size)+'px'; el.style.height=(w.h*size)+'px';
-    const t=document.createElement('div'); t.className='ttl'; t.textContent=w.title||w.type;
-    const s=document.createElement('div'); s.className='sub'; s.textContent=w.sub||'';
-    const b=document.createElement('div'); b.className='box';
+
+    const title=document.createElement('div'); title.className='ttl'; title.textContent=w.title||w.type;
+    const sub=document.createElement('div'); sub.className='sub'; sub.textContent=w.sub||'';
+    const box=document.createElement('div'); box.className='box';
     const h=document.createElement('div'); h.className='handle';
-    el.appendChild(t); el.appendChild(s); el.appendChild(b); el.appendChild(h);
+    el.appendChild(title); el.appendChild(sub); el.appendChild(box); el.appendChild(h);
+
+    // content
+    if(w.type==='table'){ renderTableInto(box, w); }
+    else if(w.type==='chart'){ renderChartInto(box, w); }
+    else if(w.type==='kpi'){ box.style.display='grid'; box.style.placeItems='center'; box.innerHTML='<div style="font-size:28px;font-weight:800;">$123,456</div>'; }
+    else if(w.type==='button'){ box.style.display='grid'; box.style.placeItems='center'; box.innerHTML='<button class="btn">Run</button>'; }
 
     // select
     el.addEventListener('mousedown', (e)=>{ if(e.target===h) return; setSelected(w.id); e.stopPropagation(); });
@@ -320,6 +438,172 @@
 
     host.appendChild(el); return el;
   }
+
+  function renderTableInto(container, w){
+    const t = w.table || (w.table={rows:3, cols:3, headers:["A","B","C"], formats:["text","text","text"], decimals:[0,0,0], values:Array.from({length:3},()=>Array.from({length:3},()=>'')), footer:{agg:"none",col:0}});
+    // ensure arrays sized
+    t.headers = t.headers.slice(0,t.cols); while(t.headers.length<t.cols) t.headers.push("Col "+(t.headers.length+1));
+    t.formats = t.formats.slice(0,t.cols); while(t.formats.length<t.cols) t.formats.push("text");
+    t.decimals = t.decimals.slice(0,t.cols); while(t.decimals.length<t.cols) t.decimals.push(2);
+    t.values = t.values.slice(0,t.rows); while(t.values.length<t.rows) t.values.push(Array.from({length:t.cols},()=>'')); t.values.forEach(r=>{ r.length=t.cols; for(let i=0;i<t.cols;i++) if(r[i]==null) r[i]=''; });
+
+    const gridCols = `repeat(${t.cols}, minmax(80px, 1fr))`;
+    container.innerHTML = '';
+    const table = document.createElement('div'); table.className='table';
+    const thead = document.createElement('div'); thead.className='thead trow'; thead.style.gridTemplateColumns=gridCols;
+    const tbody = document.createElement('div'); tbody.className='tbody';
+    const tfoot = document.createElement('div'); tfoot.className='tfoot trow'; tfoot.style.gridTemplateColumns=gridCols;
+
+    // header
+    for(let c=0;c<t.cols;c++){
+      const th=document.createElement('div'); th.className='tcell th'; th.contentEditable=true; th.textContent=t.headers[c];
+      th.addEventListener('input',()=>{ t.headers[c]=th.textContent; });
+      thead.appendChild(th);
+    }
+
+    // body
+    for(let r=0;r<t.rows;r++){
+      const row=document.createElement('div'); row.className='trow'; row.style.gridTemplateColumns=gridCols;
+      for(let c=0;c<t.cols;c++){
+        const cell=document.createElement('div'); cell.className='tcell'; cell.contentEditable=true;
+        cell.textContent = formatValue(t.values[r][c], t.formats[c], t.decimals[c]);
+        cell.addEventListener('focus',()=>{ cell.textContent=(''+t.values[r][c]); }); // show raw on edit
+        cell.addEventListener('blur',()=>{ t.values[r][c]=cell.textContent; cell.textContent=formatValue(t.values[r][c], t.formats[c], t.decimals[c]); renderChartsBoundTo(w.id); });
+        row.appendChild(cell);
+      }
+      tbody.appendChild(row);
+    }
+
+    // footer aggregate
+    tfoot.innerHTML='';
+    for(let c=0;c<t.cols;c++){
+      const cell=document.createElement('div'); cell.className='tcell'; 
+      if(t.footer.agg!=='none' && c===t.footer.col){
+        const colVals = t.values.map(r=>r[c]);
+        let val = aggregate(colVals, t.footer.agg);
+        if(typeof val==='number'){ val = formatValue(val, t.formats[c]==='text'?'number':t.formats[c], t.decimals[c]); }
+        cell.textContent = String(val);
+      } else {
+        cell.textContent='';
+      }
+      tfoot.appendChild(cell);
+    }
+
+    table.appendChild(thead); table.appendChild(tbody); if(t.footer.agg!=='none') table.appendChild(tfoot);
+    container.appendChild(table);
+  }
+
+  function renderChartInto(container, w){
+    container.innerHTML='';
+    container.className='box chartwrap';
+    const svgNS = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(svgNS,'svg');
+    svg.setAttribute('width','100%'); svg.setAttribute('height','100%'); svg.setAttribute('viewBox','0 0 600 300');
+    const kind = w.chart?.kind || 'bar';
+
+    // Get data
+    const {data, cats, values} = chartDataFor(w);
+    if(!data || data.length===0){ container.textContent='Bind to a Table in Properties'; return; }
+
+    if(kind==='bar' || kind==='line'){
+      // axes
+      const padL=50, padB=30, padT=10, padR=10;
+      const plotW=600-padL-padR, plotH=300-padT-padB;
+      const maxY = Math.max(1, ...values);
+      // grid lines
+      for(let i=0;i<=4;i++){
+        const y = padT + plotH - (i/4)*plotH;
+        const gl = document.createElementNS(svgNS,'line');
+        gl.setAttribute('x1', padL); gl.setAttribute('y1', y);
+        gl.setAttribute('x2', padL+plotW); gl.setAttribute('y2', y);
+        gl.setAttribute('stroke','#e5e7eb'); svg.appendChild(gl);
+      }
+      // bars or line
+      if(kind==='bar'){
+        const barW = plotW / cats.length * 0.6;
+        cats.forEach((c,i)=>{
+          const val = values[i]||0;
+          const h = (val/maxY)*plotH;
+          const x = padL + i*(plotW/cats.length) + (plotW/cats.length - barW)/2;
+          const y = padT + plotH - h;
+          const rect = document.createElementNS(svgNS,'rect');
+          rect.setAttribute('x',x); rect.setAttribute('y',y); rect.setAttribute('width',barW); rect.setAttribute('height',h);
+          rect.setAttribute('fill','#2563eb'); svg.appendChild(rect);
+        });
+      } else {
+        let prev=null;
+        cats.forEach((c,i)=>{
+          const val = values[i]||0;
+          const x = padL + (i/(cats.length-1||1))*plotW;
+          const y = padT + plotH - (val/maxY)*plotH;
+          const dot = document.createElementNS(svgNS,'circle'); dot.setAttribute('cx',x); dot.setAttribute('cy',y); dot.setAttribute('r',3); dot.setAttribute('fill','#2563eb'); svg.appendChild(dot);
+          if(prev){
+            const ln = document.createElementNS(svgNS,'line'); ln.setAttribute('x1',prev.x); ln.setAttribute('y1',prev.y); ln.setAttribute('x2',x); ln.setAttribute('y2',y); ln.setAttribute('stroke','#2563eb'); svg.appendChild(ln);
+          }
+          prev={x,y};
+        });
+      }
+      // x labels
+      cats.forEach((c,i)=>{
+        const tx = document.createElementNS(svgNS,'text');
+        const x = padL + i*(plotW/cats.length) + 5; const y = padT + plotH + 18;
+        tx.setAttribute('x',x); tx.setAttribute('y',y); tx.setAttribute('font-size','10'); tx.setAttribute('fill','#64748b');
+        tx.textContent = String(c).slice(0,10);
+        svg.appendChild(tx);
+      });
+
+    } else if(kind==='pie'){
+      const cx=300, cy=150, r=100;
+      const total = values.reduce((a,b)=>a+(Number(b)||0),0)||1;
+      let ang=0;
+      values.forEach((v,i)=>{
+        const val=Number(v)||0; const slice = (val/total)*Math.PI*2;
+        const x1 = cx + r*Math.cos(ang), y1 = cy + r*Math.sin(ang);
+        const x2 = cx + r*Math.cos(ang+slice), y2 = cy + r*Math.sin(ang+slice);
+        const large = slice>Math.PI ? 1 : 0;
+        const path = document.createElementNS(svgNS,'path');
+        const d = `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2} Z`;
+        path.setAttribute('d', d); path.setAttribute('fill', pieColor(i));
+        svg.appendChild(path);
+        ang += slice;
+      });
+    }
+
+    container.appendChild(svg);
+  }
+
+  function pieColor(i){
+    const colors = ['#2563eb','#10b981','#f59e0b','#ef4444','#8b5cf6','#14b8a6','#f97316','#22c55e'];
+    return colors[i%colors.length];
+  }
+
+  function chartDataFor(w){
+    const ch = w.chart || {};
+    let sourceWidget = null;
+    if(ch.source!=null){ sourceWidget = current().widgets.find(x=>x.id===ch.source); }
+    else{
+      // default: first table
+      sourceWidget = current().widgets.find(x=>x.type==='table');
+      if(sourceWidget) { ch.source = sourceWidget.id; w.chart = ch; }
+    }
+    if(!sourceWidget || sourceWidget.type!=='table') return {data:null,cats:[],values:[]};
+    const t = sourceWidget.table;
+    const catCol = clamp(ch.catCol ?? 0, 0, t.cols-1);
+    const valCol = clamp(ch.valCol ?? 1, 0, t.cols-1);
+    const cats = t.values.map(r=> formatValue(r[catCol], t.formats[catCol], t.decimals[catCol]) );
+    const values = t.values.map(r=> Number((''+r[valCol]).replace(/[^0-9.\-]/g,'')) || 0 );
+    return {data:t.values, cats, values};
+  }
+
+  function renderChartsBoundTo(tableId){
+    current().widgets.forEach(w=>{
+      if(w.type==='chart' && w.chart?.source===tableId){
+        const host = document.querySelector(`[data-wid="${w.id}"] .box`);
+        if(host) renderChartInto(host, w);
+      }
+    });
+  }
+
   function renderWidgets(){
     $("#pageInner").innerHTML='';
     current().widgets.forEach(w=> widgetEl(w));
@@ -329,36 +613,72 @@
     }
   }
 
-  // === Properties ===
+  // === PROPERTIES ===
+  function refreshTablePropsUI(w){
+    const t = w.table;
+    $("#tRows").value = t.rows;
+    $("#tCols").value = t.cols;
+    // fill column selects
+    const colOpts = Array.from({length:t.cols},(_,i)=>`<option value="${i}">${t.headers[i]||('Col '+(i+1))}</option>`).join('');
+    $("#tFormatCol").innerHTML = colOpts;
+    $("#tAggCol").innerHTML = colOpts;
+    $("#tAggType").value = t.footer?.agg || 'none';
+    $("#tAggCol").value = String(t.footer?.col ?? 0);
+  }
+
+  function refreshChartPropsUI(w){
+    const tables = current().widgets.filter(x=>x.type==='table');
+    const srcSel = $("#cSource");
+    srcSel.innerHTML = tables.map(tb=>`<option value="${tb.id}">${tb.title || 'Table ' + tb.id}</option>`).join('');
+    const setCols = ()=>{
+      const srcId = parseInt(srcSel.value||0);
+      const tb = current().widgets.find(x=>x.id===srcId);
+      const catSel = $("#cCategory"), valSel = $("#cValue");
+      if(!tb){ catSel.innerHTML=''; valSel.innerHTML=''; return; }
+      catSel.innerHTML = tb.table.headers.map((h,i)=>`<option value="${i}">${h}</option>`).join('');
+      valSel.innerHTML = tb.table.headers.map((h,i)=>`<option value="${i}">${h}</option>`).join('');
+      $("#cCategory").value = String(w.chart.catCol ?? 0);
+      $("#cValue").value = String(w.chart.valCol ?? 1);
+    };
+    if(w.chart.source==null && tables[0]){ w.chart.source = tables[0].id; }
+    srcSel.value = String(w.chart.source ?? (tables[0]?.id || ''));
+    setCols();
+
+    $("#cType").value = w.chart.kind || 'bar';
+
+    srcSel.onchange = ()=>{ w.chart.source = parseInt(srcSel.value); renderProps(); renderWidgets(); };
+    $("#cCategory").onchange = ()=>{ w.chart.catCol = parseInt($("#cCategory").value); renderWidgets(); };
+    $("#cValue").onchange = ()=>{ w.chart.valCol = parseInt($("#cValue").value); renderWidgets(); };
+    $("#cType").onchange = ()=>{ w.chart.kind = $("#cType").value; renderWidgets(); };
+  }
+
   function renderProps(){
-    const box=$("#props"), hint=$("#propHint");
-    if(!selectedId){ box.style.display='none'; hint.textContent='Select a block to edit.'; return; }
-    const w=current().widgets.find(x=>x.id===selectedId); box.style.display='block'; hint.textContent='Editing '+(w.title||w.type);
+    const hint=$("#propHint"), boxCommon=$("#propsCommon"), boxTable=$("#propsTable"), boxChart=$("#propsChart");
+    if(!selectedId){ hint.textContent='Select a block to edit.'; boxCommon.style.display='none'; boxTable.style.display='none'; boxChart.style.display='none'; return; }
+    const w=current().widgets.find(x=>x.id===selectedId);
+    hint.textContent='Editing '+(w.title||w.type);
+    boxCommon.style.display='block';
     $("#pTitle").value=w.title||''; $("#pSub").value=w.sub||''; $("#pX").value=w.x; $("#pY").value=w.y; $("#pW").value=w.w; $("#pH").value=w.h;
+
+    // type-specific
+    boxTable.style.display = (w.type==='table')?'block':'none';
+    boxChart.style.display = (w.type==='chart')?'block':'none';
+    if(w.type==='table') refreshTablePropsUI(w);
+    if(w.type==='chart') refreshChartPropsUI(w);
   }
 
   function renderAll(){ renderPageFrame(); renderTabs(); renderWidgets(); renderProps(); }
 
-  // === AI Assistant (rules engine starter) ===
+  // === AI Assistant (simple patterns) ===
   const patterns = [
     { re:/total of (\w+)\s+where\s+(\w+)\s+is\s+(.+)/i,
       make:(numCol,condCol,val)=>`=SUMIFS(${numCol}, ${condCol}, "${val}")`,
       explain:(numCol,condCol,val)=>`Sum of ${numCol} where ${condCol} = "${val}".` },
-    { re:/total of (\w+)/i,
-      make:(col)=>`=SUM(${col})`,
-      explain:(col)=>`Sum of ${col}.` },
-    { re:/average of (\w+)/i,
-      make:(col)=>`=AVERAGE(${col})`,
-      explain:(col)=>`Average of ${col}.` },
-    { re:/count rows where (\w+)\s+is\s+(.+)/i,
-      make:(col,val)=>`=COUNTIF(${col}, "${val}")`,
-      explain:(col,val)=>`Count of rows where ${col} = "${val}".` },
-    { re:/show this as date/i,
-      make:()=>`(format: mm/dd/yyyy)`,
-      explain:()=>`Format the selected value as a Date (MM/DD/YYYY).` },
-    { re:/round to (\d+) decimals?/i,
-      make:(n)=>`(format: round to ${n} decimals)`,
-      explain:(n)=>`Round numerical values to ${n} decimals.` },
+    { re:/total of (\w+)/i, make:(col)=>`=SUM(${col})`, explain:(c)=>`Sum of ${c}.` },
+    { re:/average of (\w+)/i, make:(col)=>`=AVERAGE(${col})`, explain:(c)=>`Average of ${c}.` },
+    { re:/count rows where (\w+)\s+is\s+(.+)/i, make:(col,val)=>`=COUNTIF(${col}, "${val}")`, explain:(c,v)=>`Count where ${c}="${v}".` },
+    { re:/show this as date/i, make:()=>`(format: mm/dd/yyyy)`, explain:()=>`Format as date.` },
+    { re:/round to (\d+) decimals?/i, make:(n)=>`(round ${n} decimals)`, explain:(n)=>`Round to ${n} decimals.` },
   ];
   function interpretPlain(text){
     for(const p of patterns){
@@ -372,40 +692,40 @@
 
   // Blocks
   $$(".block").forEach(b=> b.addEventListener('click',()=>{ const type=b.getAttribute('data-type');
-    const presets={table:[2,12,14,8,'Table'],chart:[2,2,18,10,'Chart'],kpi:[22,2,8,6,'KPI'],button:[20,10,8,5,'Button']};
+    const presets={table:[2,12,18,10,'Table'],chart:[2,2,18,10,'Chart'],kpi:[22,2,8,6,'KPI'],button:[20,10,8,5,'Button']};
     const d=presets[type]||[2,2,8,6,type];
-    const w={id:seq++, type, x:d[0],y:d[1],w:d[2],h:d[3], title:d[4]}; current().widgets.push(w); setSelected(w.id); renderAll();
+    const base = {id:seq++, type, x:d[0],y:d[1],w:d[2],h:d[3], title:d[4], sub:''};
+    if(type==='table'){
+      base.table = { rows:4, cols:3, headers:["A","B","C"], formats:["text","number","currency"], decimals:[0,0,2], values:Array.from({length:4},()=>['', '', '']), footer:{agg:"none", col:1} };
+    }
+    if(type==='chart'){ base.chart = { kind:'bar', source:null, catCol:0, valCol:1 }; }
+    current().widgets.push(base); setSelected(base.id); renderAll();
   }));
 
-  // Sheets (now above canvas)
+  // Sheets
   $("#newSheet").onclick=()=>{ sheets.push({name:'Sheet '+(sheets.length+1), widgets:[]}); active=sheets.length-1; setSelected(null); renderAll(); };
   $("#renameSheet").onclick=()=>{ const nm=prompt('New name', sheets[active].name); if(nm){ sheets[active].name=nm; renderAll();} };
   $("#deleteSheet").onclick=()=>{ if(sheets.length<=1) return alert('Keep at least 1'); sheets.splice(active,1); active=0; setSelected(null); renderAll(); };
 
-  // Deselect on empty canvas
+  // Deselect canvas
   $("#canvasWrap").addEventListener('mousedown', (e)=>{ 
     const ids = ['page','pageInner','pageMargins'];
     if(ids.includes(e.target.id)) { setSelected(null); renderWidgets(); }
   });
 
-  // Properties
+  // Common props
   $("#pApply").onclick=()=>{ if(!selectedId) return; const w=current().widgets.find(x=>x.id===selectedId);
     w.title=$("#pTitle").value; w.sub=$("#pSub").value; w.x=parseInt($("#pX").value||w.x); w.y=parseInt($("#pY").value||w.y);
     w.w=parseInt($("#pW").value||w.w); w.h=parseInt($("#pH").value||w.h); renderAll(); };
   $("#pDelete").onclick=()=>{ if(!selectedId) return; const arr=current().widgets; const i=arr.findIndex(x=>x.id===selectedId); if(i>-1) arr.splice(i,1); setSelected(null); renderAll(); };
 
-  // Delete Selected button (only acts if selected)
+  // Delete Selected
   $("#deleteSel").onclick=()=>{ if(selectedId) $("#pDelete").click(); };
-
-  // Delete key — only when a block is selected and you're NOT typing
   window.addEventListener('keydown', (e) => {
     if (!selectedId) return;
     const tag = (document.activeElement?.tagName || '').toUpperCase();
     if (tag === 'INPUT' || tag === 'TEXTAREA' || document.activeElement?.isContentEditable) return;
-    if (e.key === 'Delete' || e.key === 'Backspace') {
-      e.preventDefault();
-      $("#pDelete").click();
-    }
+    if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); $("#pDelete").click(); }
   });
 
   // Page setup
@@ -438,7 +758,51 @@
     renderAll();
   };
 
-  // Compile & download
+  // === Table props events ===
+  $("#tRows").onchange=()=>{ const w=current().widgets.find(x=>x.id===selectedId); if(!w||w.type!=='table') return;
+    const t=w.table; t.rows = Math.max(1, parseInt($("#tRows").value||t.rows));
+    while(t.values.length < t.rows) t.values.push(Array.from({length:t.cols},()=>'')); 
+    t.values = t.values.slice(0,t.rows);
+    renderWidgets(); renderProps(); renderChartsBoundTo(w.id);
+  };
+  $("#tCols").onchange=()=>{ const w=current().widgets.find(x=>x.id===selectedId); if(!w||w.type!=='table') return;
+    const t=w.table; const newCols = Math.max(1, parseInt($("#tCols").value||t.cols));
+    t.cols = newCols;
+    t.headers.length = newCols; for(let i=0;i<newCols;i++) if(!t.headers[i]) t.headers[i] = 'Col '+(i+1);
+    t.formats.length = newCols; for(let i=0;i<newCols;i++) if(!t.formats[i]) t.formats[i]='text';
+    t.decimals.length = newCols; for(let i=0;i<newCols;i++) if(!t.decimals[i] && t.decimals[i]!==0) t.decimals[i]=2;
+    t.values.forEach(r=>{ r.length=newCols; for(let i=0;i<newCols;i++) if(r[i]==null) r[i]=''; });
+    renderWidgets(); renderProps(); renderChartsBoundTo(w.id);
+  };
+  $("#tAddRow").onclick=()=>{ const w=current().widgets.find(x=>x.id===selectedId); if(!w||w.type!=='table') return;
+    const t=w.table; t.values.push(Array.from({length:t.cols},()=>'')); t.rows++; renderWidgets(); renderProps(); renderChartsBoundTo(w.id);
+  };
+  $("#tDelRow").onclick=()=>{ const w=current().widgets.find(x=>x.id===selectedId); if(!w||w.type!=='table') return;
+    const t=w.table; if(t.rows>1){ t.values.pop(); t.rows--; renderWidgets(); renderProps(); renderChartsBoundTo(w.id); }
+  };
+  $("#tAddCol").onclick=()=>{ const w=current().widgets.find(x=>x.id===selectedId); if(!w||w.type!=='table') return;
+    const t=w.table; t.cols++; t.headers.push('Col '+t.cols); t.formats.push('text'); t.decimals.push(2); t.values.forEach(r=>r.push('')); renderWidgets(); renderProps(); renderChartsBoundTo(w.id);
+  };
+  $("#tDelCol").onclick=()=>{ const w=current().widgets.find(x=>x.id===selectedId); if(!w||w.type!=='table') return;
+    const t=w.table; if(t.cols>1){ t.cols--; t.headers.pop(); t.formats.pop(); t.decimals.pop(); t.values.forEach(r=>r.pop()); renderWidgets(); renderProps(); renderChartsBoundTo(w.id); }
+  };
+  $("#tFormatCol").onchange=()=>{ /* just sets target column for following controls */ };
+  $("#tFormatType").onchange=()=>{ const w=current().widgets.find(x=>x.id===selectedId); if(!w||w.type!=='table') return;
+    const col = parseInt($("#tFormatCol").value||0); w.table.formats[col] = $("#tFormatType").value; renderWidgets(); renderChartsBoundTo(w.id);
+  };
+  $("#tDecimals").onchange=()=>{ const w=current().widgets.find(x=>x.id===selectedId); if(!w||w.type!=='table') return;
+    const col = parseInt($("#tFormatCol").value||0); w.table.decimals[col] = Math.max(0, parseInt($("#tDecimals").value||2)); renderWidgets(); renderChartsBoundTo(w.id);
+  };
+  $("#tAggType").onchange=()=>{ const w=current().widgets.find(x=>x.id===selectedId); if(!w||w.type!=='table') return;
+    w.table.footer.agg = $("#tAggType").value; renderWidgets(); renderChartsBoundTo(w.id);
+  };
+  $("#tAggCol").onchange=()=>{ const w=current().widgets.find(x=>x.id===selectedId); if(!w||w.type!=='table') return;
+    w.table.footer.col = parseInt($("#tAggCol").value||0); renderWidgets(); renderChartsBoundTo(w.id);
+  };
+
+  // === Chart props handled in refreshChartPropsUI ===
+
+  // Compile & download (same JSON -> backend)
   $("#compile").onclick=async()=>{
     const payload={
       project: $("#projectName").value || "Workbook",
@@ -474,27 +838,24 @@
     if(!selectedId) return;
     const w = current().widgets.find(x=>x.id===selectedId);
     if(!w) return;
-    const copy = {...w, id: seq++, x: clamp(w.x+2,1,cols-1), y: clamp(w.y+2,1,rows-1)};
+    const copy = JSON.parse(JSON.stringify(w));
+    copy.id = seq++; copy.x = clamp(w.x+2,1,cols-1); copy.y = clamp(w.y+2,1,rows-1);
     current().widgets.push(copy);
     setSelected(copy.id);
     renderAll();
   }
-  // Canvas right-click: app menu instead of browser menu
+  // Canvas right-click
   ["page","pageInner","pageMargins"].forEach(id=>{
     document.getElementById(id).addEventListener('contextmenu',(e)=>{
-      e.preventDefault();
-      setSelected(selectedId); // keep current selection
-      openCtx(e.clientX, e.clientY);
+      e.preventDefault(); openCtx(e.clientX, e.clientY);
     });
   });
-  // Clicking outside closes menu
+  // Outside click closes
   window.addEventListener('mousedown',(e)=>{ if(!ctx.contains(e.target)) closeCtx(); });
-
-  // Handle context actions
+  // Context actions
   ctx.addEventListener('click',(e)=>{
     const item = e.target.closest('.ctx-item'); if(!item) return;
-    const act = item.getAttribute('data-act');
-    closeCtx();
+    const act = item.getAttribute('data-act'); closeCtx();
     if(act==='add-table') document.querySelector('.block[data-type="table"]').click();
     else if(act==='add-chart') document.querySelector('.block[data-type="chart"]').click();
     else if(act==='add-kpi') document.querySelector('.block[data-type="kpi"]').click();
@@ -502,6 +863,10 @@
     else if(act==='auto-layout') autoLayout();
     else if(act==='duplicate') duplicateSelected();
     else if(act==='delete'){ if(selectedId) $("#pDelete").click(); }
+    else if(act==='t-add-row'){ const w=current().widgets.find(x=>x.id===selectedId); if(w?.type==='table'){ $("#tAddRow").click(); } }
+    else if(act==='t-add-col'){ const w=current().widgets.find(x=>x.id===selectedId); if(w?.type==='table'){ $("#tAddCol").click(); } }
+    else if(act==='t-del-row'){ const w=current().widgets.find(x=>x.id===selectedId); if(w?.type==='table'){ $("#tDelRow").click(); } }
+    else if(act==='t-del-col'){ const w=current().widgets.find(x=>x.id===selectedId); if(w?.type==='table'){ $("#tDelCol").click(); } }
   });
 
   // First render
